@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111318">
+<title>Home</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root {
+  --bg: #111318; --card: #1b1e25; --line: #2a2e38; --tx: #e8eaf0; --mut: #8b91a0;
+  --acc: #7aa2ff; --ok: #4cc38a; --warn: #f2b84b; --bad: #ef6b6b; --chip: #252935;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f4f5f8; --card: #fff; --line: #e3e5eb; --tx: #1b1e25; --mut: #6b7180;
+          --acc: #3c64d8; --chip: #eceef3; }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; background: var(--bg); color: var(--tx);
+  font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px); }
+main { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+header { display: flex; align-items: flex-end; justify-content: space-between; padding: 20px 0 12px; }
+h1 { font-size: 26px; margin: 0; font-weight: 700; }
+h1::first-letter { text-transform: uppercase; }
+.sub { color: var(--mut); font-size: 13px; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.icon-btn { width: 44px; height: 44px; border-radius: 22px; background: var(--card); font-size: 20px; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+section { background: var(--card); border-radius: 16px; padding: 14px 14px 6px; margin-bottom: 14px; }
+h2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); margin: 0 0 10px;
+  display: flex; justify-content: space-between; }
+h2 button { color: var(--acc); text-transform: none; letter-spacing: 0; font-size: 13px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin: 0 -14px 4px; padding-inline: 14px;
+  scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; padding: 7px 12px; border-radius: 99px; background: var(--chip); font-size: 14px; }
+.chip.on { background: var(--acc); color: #fff; }
+.chip .n { opacity: .7; margin-left: 4px; font-size: 12px; }
+.grp { font-size: 12px; color: var(--mut); margin: 10px 0 2px; font-weight: 600; }
+.row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+.grp + .row { border-top: 0; }
+.row:active { opacity: .6; }
+.dot { flex: none; width: 10px; height: 10px; border-radius: 5px; margin-top: 6px; background: var(--mut); }
+.grow { flex: 1; min-width: 0; }
+.ttl { word-wrap: break-word; }
+.meta { font-size: 12px; color: var(--mut); display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 2px; }
+.hold { opacity: .5; }
+.late { color: var(--bad); font-weight: 600; }
+.time { flex: none; width: 52px; color: var(--mut); font-size: 13px; padding-top: 1px; }
+.empty { color: var(--mut); padding: 8px 0 12px; font-size: 14px; }
+.unread .ttl { font-weight: 650; }
+a.row { color: inherit; text-decoration: none; }
+/* Estado sheet */
+#sheet { position: fixed; inset: 0; background: #0008; display: none; align-items: flex-end; z-index: 9; }
+#sheet.open { display: flex; }
+#sheet .box { background: var(--card); width: 100%; max-width: 720px; margin: 0 auto; border-radius: 18px 18px 0 0;
+  padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px); max-height: 80vh; overflow: auto; }
+#sheet .box h3 { margin: 0 0 12px; font-size: 16px; }
+.opt { display: block; width: 100%; text-align: left; padding: 13px 12px; border-radius: 12px; font-size: 16px; }
+.opt.cur { background: var(--chip); font-weight: 600; }
+.opt.link { color: var(--acc); text-decoration: none; }
+/* Setup */
+#setup { display: none; }
+#setup input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
+  color: var(--tx); font: inherit; margin: 4px 0 12px; }
+.btn { background: var(--acc); color: #fff; padding: 12px 18px; border-radius: 12px; font-weight: 600; }
+#toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px); transform: translateX(-50%);
+  background: var(--tx); color: var(--bg); padding: 10px 16px; border-radius: 99px; font-size: 14px;
+  opacity: 0; transition: opacity .2s; pointer-events: none; }
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1 id="today"></h1>
+      <div class="sub" id="status">Cargando…</div>
+    </div>
+    <button class="icon-btn" id="refresh" aria-label="Actualizar">↻</button>
+  </header>
+
+  <section id="setup">
+    <h2>Conectar</h2>
+    <label class="sub">URL de tu Apps Script (termina en /exec)</label>
+    <input id="cfgUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec">
+    <label class="sub">Clave (KEY)</label>
+    <input id="cfgKey" type="text" autocomplete="off">
+    <p><button class="btn" id="cfgSave">Guardar</button></p>
+  </section>
+
+  <section id="agenda">
+    <h2>Agenda <button id="weekBtn">Ver semana</button></h2>
+    <div id="events"></div>
+  </section>
+
+  <section id="tareas">
+    <h2>Tareas</h2>
+    <div class="chips" id="chipsT"></div>
+    <div class="chips" id="chipsC"></div>
+    <div id="tasks"></div>
+  </section>
+
+  <section id="correo">
+    <h2>Correo</h2>
+    <div id="mail"></div>
+  </section>
+</main>
+
+<div id="sheet"><div class="box" id="sheetBox"></div></div>
+<div id="toast"></div>
+
+<script>
+// ---------- Config & estado ----------
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+let cfg = LS.get('cfg', null);
+let snap = LS.get('snap', null);
+let ui = LS.get('ui', { t: 'hoy', c: '', week: false });
+let loading = false;
+
+const ESTADOS = ['🕐 Sin empezar 🕐', '🧠 Planeación🧠', '🚀 Ejecución🚀', '🔍 Seguimiento🔍',
+  '⛔ Bloqueo⛔', '🔄 Doing🔄', '✅ Done✅'];
+const EST_COLOR = { '🧠': '#7aa2ff', '🚀': '#f2994b', '🔍': '#f2b84b', '⛔': '#ef6b6b', '🔄': '#b07aff', '✅': '#4cc38a' };
+
+// "Tiempo": el texto de las opciones está desactualizado, pero el prefijo (emoji) es fijo.
+// Se reconoce por prefijo y se muestra con nombre limpio. Más largo primero.
+const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+const TIEMPO = [
+  ['⏩⏩📅', 8, 'En 2 semanas'], ['⏩📅', 7, 'Próxima semana'], ['📅', 5, 'Esta semana'], ['🌴', 6, 'Fin de semana'],
+  ['⏩⏩🗓', 11, 'En 2 meses'], ['⏩🗓', 10, 'Próximo mes'], ['🗓', 9, 'Este mes'],
+  ['🎯🎯🎯🎯', 12, 'Trimestre actual'], ['🎯🎯🎯', 15, 'En 3 trimestres'], ['🎯🎯', 14, 'En 2 trimestres'],
+  ['🎯', 13, 'Próximo trimestre'], ['🏗', 16, 'Mediano plazo'], ['🗿', 17, 'Largo plazo'], ['🏁', 18, 'Metas'],
+  ['📌', 19, 'Backlog'],
+];
+const norm = s => (s || '').replace(/[️\s]/g, '');
+function tiempo(raw) {
+  const n = norm(raw);
+  if (!n) return { r: 20, l: 'Sin tiempo' };
+  const m = n.match(/^([1-5])⃣/);
+  if (m) return { r: +m[1] - 1, l: DIAS[+m[1] - 1] + ' ' + fecha(m[1] - 1) };
+  for (const [p, r, l] of TIEMPO) if (n.startsWith(p)) return { r, l: l + detalle(r) };
+  return { r: 20, l: raw };
+}
+// Lo específico (fechas) se calcula aquí, así en Notion las opciones quedan fijas.
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+function lunes() { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; }
+function fecha(offset) { const d = lunes(); d.setDate(d.getDate() + offset);
+  return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }); }
+function detalle(r) {
+  const now = new Date(), mes = now.getMonth(), q = Math.floor(mes / 3);
+  const rango = (a, b) => ` · ${fecha(a)} – ${fecha(b)}`;
+  const trim = k => { const i = ((q + k) % 4) * 3; return ` · ${MESES[i].slice(0, 3)} – ${MESES[i + 2].slice(0, 3)}`; };
+  return { 5: rango(0, 6), 6: rango(5, 6), 7: rango(7, 13), 8: rango(14, 20),
+    9: ' · ' + MESES[mes], 10: ' · ' + MESES[(mes + 1) % 12], 11: ' · ' + MESES[(mes + 2) % 12],
+    12: trim(0), 13: trim(1), 14: trim(2), 15: trim(3) }[r] || '';
+}
+const todayRank = () => { const d = new Date().getDay(); return d === 0 || d === 6 ? 6 : d - 1; };
+const ymd = d => d.toLocaleDateString('sv-SE'); // AAAA-MM-DD local
+
+const FILTROS = [
+  ['hoy', 'Hoy', t => t._r === todayRank() || (t.d && t.d.slice(0, 10) <= ymd(new Date()))],
+  ['sem', 'Semana', t => t._r <= 6],
+  ['prox', 'Próximas', t => t._r === 7 || t._r === 8],
+  ['mes', 'Meses', t => t._r >= 9 && t._r <= 11],
+  ['largo', 'Largo', t => t._r >= 12 && t._r <= 18],
+  ['back', 'Backlog', t => t._r >= 19],
+  ['todo', 'Todo', () => true],
+];
+const CATS = [['AVR', 'AVR'], ['BBVA', 'BBVA'], ['Casa', 'Casa'], ['Maestría', 'Maestría']];
+
+// ---------- Render ----------
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const hhmm = iso => new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+function render() {
+  $('today').textContent = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' });
+  $('setup').style.display = cfg ? 'none' : 'block';
+  if (!snap) return;
+  renderEvents(); renderTasks(); renderMail(); renderStatus();
+}
+
+function renderStatus() {
+  if (loading) { $('status').textContent = 'Actualizando…'; return; }
+  const min = Math.round((Date.now() - new Date(snap.t)) / 60000);
+  $('status').textContent = min < 1 ? 'Actualizado ahora' : `Actualizado hace ${min < 60 ? min + ' min' : Math.round(min / 60) + ' h'}`;
+}
+
+function renderEvents() {
+  const today = ymd(new Date());
+  const tomorrow = ymd(new Date(Date.now() + 864e5));
+  const evs = (snap.events || []).filter(e => {
+    const day = ymd(new Date(e.s));
+    return ui.week ? true : (day === today || day === tomorrow || (e.ad && day <= today && ymd(new Date(e.e)) > today));
+  });
+  $('weekBtn').textContent = ui.week ? 'Solo hoy y mañana' : 'Ver semana';
+  if (!evs.length) { $('events').innerHTML = '<div class="empty">Nada en la agenda 🎉</div>'; return; }
+  let html = '', last = '';
+  for (const e of evs) {
+    const day = ymd(new Date(e.s));
+    if (day !== last) {
+      const lbl = day === today ? 'Hoy' : day === tomorrow ? 'Mañana'
+        : new Date(e.s).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric' });
+      html += `<div class="grp">${esc(lbl)}</div>`; last = day;
+    }
+    const past = !e.ad && new Date(e.e) < new Date();
+    html += `<div class="row${past ? ' hold' : ''}"><div class="time">${e.ad ? 'Todo el día' : hhmm(e.s)}</div>
+      <div class="grow"><div class="ttl">${esc(e.n)}</div>${e.l ? `<div class="meta">📍 ${esc(e.l)}</div>` : ''}</div>
+      <div class="dot" style="background:${esc(e.col || '')}"></div></div>`;
+  }
+  $('events').innerHTML = html;
+}
+
+function renderTasks() {
+  const tasks = (snap.tasks || []).map(t => { const ti = tiempo(t.ti); return { ...t, _r: ti.r, _l: ti.l }; });
+  const byCat = ui.c ? tasks.filter(t => (t.c || []).some(c => c.includes(ui.c))) : tasks;
+
+  $('chipsT').innerHTML = FILTROS.map(([k, l, f]) =>
+    `<button class="chip${ui.t === k ? ' on' : ''}" data-t="${k}">${l}<span class="n">${byCat.filter(f).length}</span></button>`).join('');
+  $('chipsC').innerHTML = [['', 'Todas']].concat(CATS).map(([k, l]) =>
+    `<button class="chip${ui.c === k ? ' on' : ''}" data-c="${k}">${l}</button>`).join('');
+
+  const f = (FILTROS.find(x => x[0] === ui.t) || FILTROS[0])[2];
+  const list = byCat.filter(f).sort((a, b) =>
+    a._r - b._r || (a.d || '9').localeCompare(b.d || '9') || (b.pr ?? -1) - (a.pr ?? -1));
+  if (!list.length) { $('tasks').innerHTML = '<div class="empty">Sin tareas aquí ✅</div>'; return; }
+
+  const today = ymd(new Date());
+  let html = '', last = null;
+  for (const t of list) {
+    if (t._l !== last) { html += `<div class="grp">${esc(t._l)}</div>`; last = t._l; }
+    const late = t.d && t.d.slice(0, 10) < today;
+    const meta = [
+      `<span>${esc(t.e)}</span>`,
+      t.d ? `<span class="${late ? 'late' : ''}">⏰ ${new Date(t.d.length > 10 ? t.d : t.d + 'T12:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</span>` : '',
+      t.sz ? `<span>${esc(t.sz)}</span>` : '',
+      t.pr != null ? `<span>P${t.pr}</span>` : '',
+    ].join('');
+    const col = EST_COLOR[[...(t.e || '')][0]] || '';
+    html += `<div class="row${t.v && t.v.includes('Hold') ? ' hold' : ''}" data-id="${t.id}">
+      <div class="dot" style="background:${col}"></div>
+      <div class="grow"><div class="ttl">${esc(t.n)}</div><div class="meta">${meta}</div></div></div>`;
+  }
+  $('tasks').innerHTML = html;
+}
+
+function renderMail() {
+  const m = snap.mail || [];
+  if (!m.length) { $('mail').innerHTML = '<div class="empty">Nada con la etiqueta Home</div>'; return; }
+  $('mail').innerHTML = m.map(x => `<a class="row${x.u ? ' unread' : ''}" href="https://mail.google.com/mail/u/0/#all/${esc(x.id)}" target="_blank" rel="noopener">
+    <div class="dot" style="background:${x.u ? 'var(--acc)' : 'transparent'}"></div>
+    <div class="grow"><div class="ttl">${esc(x.s)}</div><div class="meta"><span>${esc(x.f)}</span>
+    <span>${new Date(x.d).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</span></div></div></a>`).join('');
+}
+
+// ---------- Datos ----------
+async function load(fresh = true) {
+  if (!cfg || loading) return;
+  loading = true; $('refresh').classList.add('spin'); if (snap) renderStatus();
+  try {
+    const u = `${cfg.url}?k=${encodeURIComponent(cfg.key)}&fresh=${fresh ? 1 : 0}&h=${snap ? snap.h : ''}`;
+    const r = await (await fetch(u)).json();
+    if (r.error) throw new Error(r.error);
+    if (r.same) snap.t = new Date().toISOString(); else snap = r;
+    LS.set('snap', snap);
+  } catch (e) { toast('Sin conexión: muestro lo último guardado'); }
+  loading = false; $('refresh').classList.remove('spin'); render();
+}
+
+async function post(body) {
+  const r = await (await fetch(cfg.url, {
+    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ ...body, k: cfg.key }),
+  })).json();
+  if (r.error) throw new Error(r.error);
+  if (r.snap) { snap = r.snap; LS.set('snap', snap); render(); }
+}
+
+// ---------- Hoja de estado ----------
+function openSheet(id) {
+  const t = snap.tasks.find(x => x.id === id); if (!t) return;
+  $('sheetBox').innerHTML = `<h3>${esc(t.n)}</h3>` + ESTADOS.map(e =>
+    `<button class="opt${e === t.e ? ' cur' : ''}" data-e="${esc(e)}">${esc(e)}</button>`).join('') +
+    `<a class="opt link" href="https://www.notion.so/${id}" target="_blank" rel="noopener">Abrir en Notion ↗</a>`;
+  $('sheet').dataset.id = id; $('sheet').classList.add('open');
+}
+$('sheet').addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-e]');
+  if (ev.target === $('sheet')) return $('sheet').classList.remove('open');
+  if (!b) return;
+  const id = $('sheet').dataset.id, estado = b.dataset.e;
+  const t = snap.tasks.find(x => x.id === id), prev = t.e;
+  $('sheet').classList.remove('open');
+  t.e = estado; // optimista
+  if (estado === '✅ Done✅') snap.tasks = snap.tasks.filter(x => x.id !== id);
+  render(); toast('Guardando…');
+  try { await post({ action: 'setEstado', id, estado }); toast('Listo ✅'); }
+  catch (e) { t.e = prev; if (!snap.tasks.includes(t)) snap.tasks.push(t); render(); toast('No se pudo guardar'); }
+});
+
+// ---------- Eventos UI ----------
+document.addEventListener('click', ev => {
+  const chipT = ev.target.closest('[data-t]'), chipC = ev.target.closest('[data-c]'), row = ev.target.closest('#tasks .row');
+  if (chipT) { ui.t = chipT.dataset.t; LS.set('ui', ui); renderTasks(); }
+  else if (chipC) { ui.c = chipC.dataset.c; LS.set('ui', ui); renderTasks(); }
+  else if (row) openSheet(row.dataset.id);
+});
+$('weekBtn').onclick = () => { ui.week = !ui.week; LS.set('ui', ui); renderEvents(); };
+$('refresh').onclick = () => load(true);
+$('cfgSave').onclick = () => {
+  const url = $('cfgUrl').value.trim(), key = $('cfgKey').value.trim();
+  if (!url || !key) return toast('Faltan datos');
+  cfg = { url, key }; LS.set('cfg', cfg); render(); load(true);
+};
+// Volver a la app = refrescar si pasaron más de 5 min
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && (!snap || Date.now() - new Date(snap.t) > 5 * 60000)) load(true);
+});
+
+let toastT;
+function toast(msg) { $('toast').textContent = msg; $('toast').classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('show'), 2200); }
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+render();
+load(true);
+setInterval(() => snap && !loading && renderStatus(), 60000);
+</script>
+</body>
+</html>
