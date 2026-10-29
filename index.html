@@ -183,6 +183,7 @@ const hhmm = iso => new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit',
 function render() {
   $('today').textContent = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' });
   $('setup').style.display = cfg ? 'none' : 'block';
+  if (!cfg) $('status').textContent = 'Falta conectar ↓';
   if (!snap) return;
   renderEvents(); renderTasks(); renderMail(); renderStatus();
 }
