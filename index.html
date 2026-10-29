@@ -68,7 +68,7 @@ a.row { color: inherit; text-decoration: none; }
 #setup input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
   color: var(--tx); font: inherit; margin: 4px 0 12px; }
 .btn { background: var(--acc); color: #fff; padding: 12px 18px; border-radius: 12px; font-weight: 600; }
-#toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px); transform: translateX(-50%);
+#toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px); transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); text-align: center;
   background: var(--tx); color: var(--bg); padding: 10px 16px; border-radius: 99px; font-size: 14px;
   opacity: 0; transition: opacity .2s; pointer-events: none; }
 #toast.show { opacity: 1; }
@@ -109,6 +109,7 @@ a.row { color: inherit; text-decoration: none; }
     <h2>Correo</h2>
     <div id="mail"></div>
   </section>
+  <p style="text-align:center"><button class="sub" id="cfgOpen">⚙︎ Conexión</button></p>
 </main>
 
 <div id="sheet"><div class="box" id="sheetBox"></div></div>
@@ -271,7 +272,13 @@ async function load(fresh = true) {
     if (r.error) throw new Error(r.error);
     if (r.same) snap.t = new Date().toISOString(); else snap = r;
     LS.set('snap', snap);
-  } catch (e) { toast('Sin conexión: muestro lo último guardado'); }
+  } catch (e) {
+    const m = String(e.message || e);
+    if (m === 'unauthorized') toast('La KEY no coincide. Toca "Conexión" abajo y revísala', 6000);
+    else if (/JSON|Unexpected|token/i.test(m)) toast('El script no devolvió datos: revisa que el acceso sea "Cualquier usuario"', 6000);
+    else if (/Failed to fetch|NetworkError|Load failed/i.test(m)) toast('No llegué al script: revisa la URL /exec o tu internet', 6000);
+    else toast('Error: ' + m, 8000);
+  }
   loading = false; $('refresh').classList.remove('spin'); render();
 }
 
@@ -315,6 +322,10 @@ document.addEventListener('click', ev => {
 });
 $('weekBtn').onclick = () => { ui.week = !ui.week; LS.set('ui', ui); renderEvents(); };
 $('refresh').onclick = () => load(true);
+$('cfgOpen').onclick = () => {
+  $('setup').style.display = 'block'; $('cfgUrl').value = cfg ? cfg.url : ''; $('cfgKey').value = cfg ? cfg.key : '';
+  window.scrollTo(0, 0);
+};
 $('cfgSave').onclick = () => {
   const url = $('cfgUrl').value.trim(), key = $('cfgKey').value.trim();
   if (!url || !key) return toast('Faltan datos');
@@ -326,8 +337,8 @@ document.addEventListener('visibilitychange', () => {
 });
 
 let toastT;
-function toast(msg) { $('toast').textContent = msg; $('toast').classList.add('show');
-  clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('show'), 2200); }
+function toast(msg, ms = 2200) { $('toast').textContent = msg; $('toast').classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('show'), ms); }
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 render();
