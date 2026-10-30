@@ -276,7 +276,7 @@ async function load(fresh = true) {
     const m = String(e.message || e);
     if (m === 'unauthorized') toast('La KEY no coincide. Toca "Conexión" abajo y revísala', 6000);
     else if (/JSON|Unexpected|token/i.test(m)) toast('El script no devolvió datos: revisa que el acceso sea "Cualquier usuario"', 6000);
-    else if (/Failed to fetch|NetworkError|Load failed/i.test(m)) toast('No llegué al script: revisa la URL /exec o tu internet', 6000);
+    else if (/Failed to fetch|NetworkError|Load failed/i.test(m)) toast('No llegué al script: revisa la URL /exec y que el acceso sea "Cualquier usuario"', 7000);
     else toast('Error: ' + m, 8000);
   }
   loading = false; $('refresh').classList.remove('spin'); render();
