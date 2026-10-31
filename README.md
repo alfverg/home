@@ -17,4 +17,7 @@ Crea la etiqueta **Home**. Lo que tenga esa etiqueta (por filtro o Gemini) apare
 ## 4. Página (GitHub Pages)
 La sube Claude al repo. Ábrela en el S25 con Chrome → pega URL y KEY → menú ⋮ → **Agregar a pantalla principal**.
 
-> Si cambias `Code.gs`: Implementar → Administrar implementaciones → ✏️ → Versión: nueva. Así la URL no cambia.
+## 5. Hábitos (Google Sheet)
+`setup()` también crea el Sheet **Home · Hábitos** (pestañas Estructura y Registro) y deja su URL en el registro. Ahí se guardan tus hábitos y sus ✓. No lo edites a mano salvo emergencia.
+
+> Si cambias `Code.gs`: pégalo, corre `setup()` una vez y luego Implementar → Administrar implementaciones → ✏️ → Versión: nueva. Así la URL no cambia.

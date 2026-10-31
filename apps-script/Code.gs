@@ -3,6 +3,7 @@
  *
  * Lee Notion (📋 Pendientes), Google Calendar y Gmail (etiqueta "Home"),
  * arma UN solo JSON compacto y lo guarda en caché. La página lo pide al abrir.
+ * Los hábitos (lista y ✓ de cada día) viven en un Google Sheet que el script crea solo.
  *
  * Configuración (una sola vez):
  *   1. Pega este archivo en script.google.com (proyecto nuevo).
@@ -18,7 +19,27 @@ const NOTION_DB = '2767c8edbe0e8045a5fbdc6e359a8f6f'; // 📋 Pendientes
 const NOTION_VERSION = '2022-06-28';
 const GMAIL_QUERY = 'label:Home in:inbox';
 const CAL_DAYS = 7;
-const CACHE_KEY = 'home_v1';
+const CACHE_KEY = 'home_v2';
+const HAB_DIAS = 3; // días de ✓ que viajan a la página
+
+// Hábitos iniciales (copiados de las tarjetas "Hábitos Mañana" y "Hábitos Noche").
+// Solo se usan la primera vez; después la lista vive en el Sheet y se edita desde la página.
+const HAB_INICIAL = {
+  man: [
+    ['🚿 Despertar', ['Mirror Stare', '🥶 Regaderazo agua fría', '🛏️ Hacer cama']],
+    ['🧘🏾‍♂️ Cuerpo y mente', ['🤸🏾‍♂️ Estirar', 'Partes', '🧘🏾‍♂️ Meditación', '🧎🏾‍➡️ Oración chica']],
+    ['🍏 Comer', ['🍏 Comer algo', '🚰 Agua']],
+    ['💊 Pastillas', ['Kefir', 'Creatina', 'Propóleos y Jalea Real', 'Magnesio']],
+  ],
+  si: [],
+  no: [],
+  noc: [
+    '📵 No celular',
+    ['🙄 Casa', ['🙄 Recoger casa', '👔 Ropa día siguiente']],
+    ['🌬️ Calma', ['🧎🏾 Meditar', '🤸🏾‍♂️ Estirar', '🌬️ Respirar']],
+    ['📖 Cerrar el día', ['📋 Actualizar hábitos', '📖 Leer']],
+  ],
+};
 
 const DONE_STATES = ['✅ Done✅', 'Done Limpiar'];
 const PROGRESO_100 = '100% - ⬤⬤⬤⬤⬤';
@@ -31,6 +52,7 @@ function setup() {
     props.setProperty('KEY', Utilities.getUuid().replace(/-/g, ''));
   }
   Logger.log('Tu KEY (pégala en la página): ' + props.getProperty('KEY'));
+  Logger.log('Sheet de hábitos: ' + habSheet_().getUrl());
 
   // Trigger cada hora (borra los anteriores para no duplicar)
   ScriptApp.getProjectTriggers()
@@ -69,6 +91,14 @@ function doPost(e) {
       notion_('patch', '/pages/' + body.id, {
         properties: { Tiempo: body.tiempo ? { select: { name: body.tiempo } } : { select: null } },
       });
+    } else if (body.action === 'habSet') {
+      // Un ✓ (o su quitada) de un hábito en un día: se agrega un renglón, el último manda
+      habSheet_().getSheetByName('Registro').appendRow([body.f, body.llave, body.v ? 1 : 0, new Date()]);
+      return json_({ ok: true, snap: refreshHab_() });
+    } else if (body.action === 'habEst') {
+      // La lista de hábitos (orden, módulos, nombres) completa
+      habSheet_().getSheetByName('Estructura').getRange('A1').setValue(JSON.stringify(body.s));
+      return json_({ ok: true, snap: refreshHab_() });
     } else {
       return json_({ error: 'unknown action' });
     }
@@ -86,8 +116,21 @@ function refreshCache() {
     tasks: safe_(getTasks_, []),
     events: safe_(getEvents_, []),
     mail: safe_(getMail_, []),
+    hab: safe_(getHab_, null),
   };
-  data.h = hash_(JSON.stringify([data.tasks, data.events, data.mail]));
+  return guardar_(data);
+}
+
+/** Solo rehace la parte de hábitos (rápido: no vuelve a leer Notion). */
+function refreshHab_() {
+  const data = getSnapshot_();
+  data.hab = getHab_();
+  data.t = new Date().toISOString();
+  return guardar_(data);
+}
+
+function guardar_(data) {
+  data.h = hash_(JSON.stringify([data.tasks, data.events, data.mail, data.hab]));
   CacheService.getScriptCache().put(CACHE_KEY, JSON.stringify(data), 21600); // 6 h, máx. permitido
   return data;
 }
@@ -130,6 +173,8 @@ function compactTask_(pg) {
     pr: p.Prioridad.number,
     d: p.Deadline.date ? p.Deadline.date.start : null,
     o: sel(p.Obligatorio),
+    pg: sel(p.Progreso),
+    sc: multi(p.Subcategoria),
   };
   // Quita campos vacíos para ahorrar bytes
   Object.keys(t).forEach(k => {
@@ -151,6 +196,43 @@ function notion_(method, path, payload) {
   const code = res.getResponseCode();
   if (code >= 300) throw new Error('Notion ' + code + ': ' + res.getContentText().slice(0, 200));
   return JSON.parse(res.getContentText());
+}
+
+// ---------- Hábitos (Google Sheet) ----------
+
+/** El Sheet "Home · Hábitos": se crea solo la primera vez. Hojas: Estructura (A1 = JSON) y Registro. */
+function habSheet_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('HAB_SHEET');
+  if (id) return SpreadsheetApp.openById(id);
+  const ss = SpreadsheetApp.create('Home · Hábitos');
+  ss.getSheets()[0].setName('Estructura').getRange('A1').setValue(JSON.stringify(HAB_INICIAL));
+  const reg = ss.insertSheet('Registro');
+  reg.getRange('A:A').setNumberFormat('@'); // la fecha va como texto AAAA-MM-DD, sin que Sheets la convierta
+  reg.appendRow(['fecha', 'llave', 'valor', 'cuando']);
+  props.setProperty('HAB_SHEET', ss.getId());
+  return ss;
+}
+
+/** { s: lista de hábitos, d: { 'AAAA-MM-DD': { llave: 1 } } } con los últimos días */
+function getHab_() {
+  const ss = habSheet_();
+  const s = JSON.parse(ss.getSheetByName('Estructura').getRange('A1').getValue() || 'null') || HAB_INICIAL;
+  const reg = ss.getSheetByName('Registro');
+  const last = reg.getLastRow();
+  const d = {};
+  if (last > 1) {
+    const desde = Utilities.formatDate(new Date(Date.now() - HAB_DIAS * 864e5), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    // Solo las últimas filas: con ~40 ✓ diarios, 600 alcanzan para varios días
+    const start = Math.max(2, last - 599);
+    const filas = reg.getRange(start, 1, last - start + 1, 3).getDisplayValues();
+    filas.forEach(([f, llave, v]) => {
+      if (f < desde) return;
+      (d[f] = d[f] || {})[llave] = v === '1' ? 1 : 0;
+    });
+    Object.keys(d).forEach(f => Object.keys(d[f]).forEach(k => { if (!d[f][k]) delete d[f][k]; }));
+  }
+  return { s, d };
 }
 
 // ---------- Calendar ----------
