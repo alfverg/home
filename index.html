@@ -67,9 +67,25 @@ svg text { font: 700 8px var(--body); fill: var(--mut); }
 /* Texto según la distancia al seleccionado: más cerca, más grande */
 .dy:not(.big) .tl li { font-size: var(--fs, 11px); }
 .dy.big .tl li { font-size: var(--bfs, 17px); color: var(--tx); }
-/* Si la lista abierta no cabe en pantalla: todo el ancho y varias columnas */
-#days.ancho { flex-direction: column; align-items: stretch; gap: 16px; }
-#days.ancho .row { display: flex; gap: 12px; align-items: flex-start; }
+/* Pasado atrás a la izquierda; abierto; futuro a su lado y debajo a lo ancho */
+#days { flex-direction: column; align-items: stretch; gap: 16px; }
+.top { display: flex; gap: 12px; align-items: flex-start; }
+.top > .izq { flex: 2; min-width: 0; }
+.top > .side { flex: 1; }
+.top > .dy.big { flex: 1; min-width: 0; }
+.row { display: flex; gap: 12px; align-items: flex-start; }
+.row > .col { flex: 1; min-width: 0; }
+.pc { flex: 0 0 21%; min-width: 0; }
+.prow { display: flex; gap: 12px; align-items: flex-start; }
+.prow > .dy { flex: 0 1 26%; }
+#days.vB .top { margin-left: 16%; }
+.dy.big .tail { white-space: normal; }
+/* Fondo mapa de calor */
+#days { position: relative; isolation: isolate; }
+#days::before { content: ""; position: absolute; top: -8px; bottom: -8px; left: var(--padl, -16px); right: var(--padr, -16px); z-index: -1; pointer-events: none; background-image: var(--heat, none); background-position: var(--hpos); background-size: var(--hsz); background-repeat: no-repeat; }
+.dy.has::before { left: var(--pad, 0px); top: calc(13px + var(--pad, 0px)); bottom: var(--pad, 0px); }
+.dy.big.has::before { top: calc(32px + var(--pad, 0px)); }
+.dy.chico.has:not(.big)::before { top: calc(10px + var(--pad, 0px)); }
 .dy.big.mc .tl { display: block; columns: var(--nc); column-gap: 16px; }
 .dy.big.mc .tl li { margin-bottom: 8px; break-inside: avoid; }
 .dy.big.mc .tl li.gh { break-after: avoid; }
@@ -403,6 +419,7 @@ const COL = {
 };
 const FAM = { d0: 'azul', d1: 'azul', S: 'azul', d2: 'rosa', d3: 'rosa', P: 'rosa', d4: 'pasto', F: 'pasto' };
 const defaultSel = () => dow < 5 ? 'd' + dow : 'F';
+let VAR = 'A';
 function renderDays() {
   const box = document.getElementById('days'); box.innerHTML = '';
   REG = [];
@@ -447,42 +464,70 @@ function renderDays() {
   far = true;
   for (let i = 0; i < start; i++) day(i);
   rombo('P', 'Próxima semana', false, rango(7, 13));
-  // Lo que va antes del seleccionado es "pasado": se va al final, con letra más chica
+  // Pasado (lo anterior al seleccionado): atrás en x, a la misma altura o más arriba, letra más chica
   const sel = seq.findIndex(d => d.classList.contains('big'));
-  seq.forEach((d, k) => d.style.setProperty('--fs', (k > sel ? ([0, 12.5, 11.5, 10.5][k - sel] ?? 9.5) : k === sel - 1 ? 9 : 8) + 'px'));
-  const bigEl = box.firstChild;
-  const orden = [...seq.slice(sel + 1), ...seq.slice(0, sel)];
-  // La lista abierta debe caber en pantalla: si no cabe, ocupa todo el ancho y se parte en más columnas
+  const bigEl = seq[sel], past = seq.slice(0, sel), fut = seq.slice(sel + 1);
+  fut.forEach((d, k) => d.style.setProperty('--fs', ([12.5, 11.5, 10.5][k] ?? 9.5) + 'px'));
+  past.forEach((d, k) => d.style.setProperty('--fs', (k === past.length - 1 ? 9 : 8) + 'px'));
+  // La lista abierta cabe en pantalla: baja la letra y, si hace falta, se abre a lo ancho en columnas
   const ul = bigEl.querySelector('.tl');
   const navH = document.querySelector('nav.pags').offsetHeight;
-  const NIV = [[1, 17], [2, 17], [2, 15], [3, 13]];   // [columnas de texto, tamaño de letra]
-  for (let n = 0; n < NIV.length; n++) {
-    acomodar(box, bigEl, orden, n > 0);
-    bigEl.style.setProperty('--nc', NIV[n][0]); bigEl.style.setProperty('--bfs', NIV[n][1] + 'px');
-    bigEl.classList.toggle('mc', NIV[n][0] > 1);
+  const NIV = [[1, 17, 0], [1, 15, 0], [2, 15, 1], [2, 13, 1], [3, 12, 1]];   // [columnas, letra, ancho]
+  for (const [nc, px, ancho] of NIV) {
+    bigEl.style.setProperty('--nc', nc); bigEl.style.setProperty('--bfs', px + 'px');
+    bigEl.classList.toggle('mc', nc > 1);
+    acomodar(box, bigEl, past, fut, !!ancho);
     if (!ul || ul.getBoundingClientRect().bottom + scrollY <= innerHeight - navH - 8) break;
   }
+  fondos();
 }
-// Acomoda los días. Normal: el abierto ocupa 2 de 3 columnas y a su lado van los que quepan.
-// Ancho: el abierto ocupa las 3 y los demás van debajo. El resto, de izquierda a derecha (1, 2, 3, 1, 2, 3…)
-function acomodar(box, bigEl, rest, ancho) {
-  box.innerHTML = '';
-  box.classList.toggle('ancho', ancho);
-  const cols = [0, 1, 2].map(() => { const c = document.createElement('div'); c.className = 'col'; return c; });
+const div = (c, ...hijos) => { const d = document.createElement('div'); d.className = c; d.append(...hijos); return d; };
+// Primer renglón: pasado (atrás, a la izquierda) + abierto (+ a su lado los que quepan). Debajo, el futuro a todo lo ancho (1, 2, 3…)
+function acomodar(box, bigEl, past, fut, ancho) {
+  box.innerHTML = ''; box.className = 'v' + (past.length ? VAR : '0');
+  const pc = past.length && VAR !== 'B' ? [div('col pc', ...past)] : [];
+  const side = div('col side'), cols = [0, 1, 2].map(() => div('col'));
+  const lado = !ancho && VAR !== 'C';
+  if (VAR === 'B' && past.length) box.append(div('prow', ...past));
+  box.append(div('top', ...pc, lado ? div('izq', bigEl) : bigEl, ...(lado ? [side] : [])), div('row', ...cols));
   let i = 0;
-  if (ancho) {
-    const row = document.createElement('div'); row.className = 'row';
-    row.append(...cols); box.append(bigEl, row);
-  } else {
-    const izq = document.createElement('div'); izq.className = 'izq';
-    const row = document.createElement('div'); row.className = 'row';
-    izq.append(bigEl, row); row.append(cols[0], cols[1]); box.append(izq, cols[2]);
-    const top = box.getBoundingClientRect().top;
-    const fondo = c => c.lastChild ? c.lastChild.getBoundingClientRect().bottom - top : c.getBoundingClientRect().top - top;
-    const bigBottom = bigEl.getBoundingClientRect().bottom - top;
-    while (i < rest.length && fondo(cols[2]) < bigBottom) cols[2].appendChild(rest[i++]);
+  if (lado) {
+    const bb = bigEl.getBoundingClientRect().bottom;
+    while (i < fut.length && (side.lastChild ? side.lastChild.getBoundingClientRect().bottom : 0) < bb) side.appendChild(fut[i++]);
   }
-  rest.slice(i).forEach((d, k) => cols[k % 3].appendChild(d));
+  fut.slice(i).forEach((d, k) => cols[k % 3].appendChild(d));
+}
+// Fondo por zonas (rectángulos del fondo, no por tarjeta):
+// 1 pasado = morado claro · 2 seleccionado = limpio · 3 futuro a su lado = morado oscuro · 4 futuro debajo = morado más oscuro
+let FONDO = '1';
+function fondos() {
+  const box = document.getElementById('days');
+  if (FONDO === '0') { box.style.removeProperty('--heat'); box.style.removeProperty('--hpos'); box.style.removeProperty('--hsz'); return; }
+  const r0 = box.getBoundingClientRect(), W = document.documentElement.clientWidth, X0 = 0, Y0 = r0.top - 8;
+  box.style.setProperty('--padl', -r0.left + 'px'); box.style.setProperty('--padr', -(W - r0.right) + 'px');
+  const z = [];
+  const zona = (el, color, x1, x2) => {
+    if (!el || !el.childElementCount) return;
+    const r = el.getBoundingClientRect();
+    z.push([color, x1 ?? 0, r.top - 8 - Y0, (x2 ?? W) - (x1 ?? 0), r.height + 16]);
+  };
+  // Degradado dentro de cada zona: más intenso mientras más lejos del seleccionado
+  // 1: claro arriba (lo más viejo) → se apaga abajo. 3: el futuro se oscurece hacia abajo. 4: sigue oscureciéndose hacia abajo a la derecha
+  const cl = a => `color-mix(in srgb, #967DC4 ${a}%, transparent)`;
+  // Oscuro: más oscuro que el fondo (#140E20). Valores = opacidad sobre el fondo; máximo .7 (P)
+  const os = a => `rgb(8 5 15 / ${a})`;
+  const deg = (ang, a, b) => `linear-gradient(${ang}, ${os(a)}, ${os(b)})`;
+  const Z1 = `linear-gradient(160deg, ${cl(8)}, ${cl(0)})`;   // arriba (lo más viejo) 100% → abajo 0%
+  const Z3 = deg('180deg', 0, .5);    // V arriba (nada) → W abajo
+  const Z4 = deg('90deg', .15, .7);   // F izquierda (suave) → P derecha (máximo)
+  const top = box.querySelector('.top'), pc = box.querySelector('.pc'), side = box.querySelector('.side');
+  if (pc) zona(top, Z1, 0, pc.getBoundingClientRect().right + 6 - X0);                     // 1
+  zona(box.querySelector('.prow'), Z1);                                                   // 1 (variante B)
+  if (side && side.childElementCount) zona(top, Z3, side.getBoundingClientRect().left - 6 - X0, W);   // 3
+  zona(box.querySelector('.row'), Z4);                                                    // 4
+  box.style.setProperty('--heat', z.map(([c]) => c).join(','));
+  box.style.setProperty('--hpos', z.map(q => `${Math.round(q[1])}px ${Math.round(q[2])}px`).join(','));
+  box.style.setProperty('--hsz', z.map(q => `${Math.round(q[3])}px ${Math.round(q[4])}px`).join(','));
 }
 document.fonts?.ready.then(() => renderDays());
 // Tocar una tarea abre su ficha
@@ -720,13 +765,14 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') { render(); if (!snap || Date.now() - new Date(snap.t) > 5 * 60000) load(true); }
 });
 setInterval(() => !loading && renderStatus(), 60000);
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
 
 document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('hit')) { e.preventDefault(); e.target.onclick(); }
 });
 
 selDay = defaultSel();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 if (LS.get('pg', 'tareas') === 'habitos') document.querySelector('nav.pags button[data-pg="habitos"]').click();
 render();
 load(true);
