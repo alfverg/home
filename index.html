@@ -66,7 +66,13 @@ svg text { font: 700 8px var(--body); fill: var(--mut); }
 .tl li .n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 /* Texto según la distancia al seleccionado: más cerca, más grande */
 .dy:not(.big) .tl li { font-size: var(--fs, 11px); }
-.dy.big .tl li { font-size: 17px; color: var(--tx); }
+.dy.big .tl li { font-size: var(--bfs, 17px); color: var(--tx); }
+/* Si la lista abierta no cabe en pantalla: todo el ancho y varias columnas */
+#days.ancho { flex-direction: column; align-items: stretch; gap: 16px; }
+#days.ancho .row { display: flex; gap: 12px; align-items: flex-start; }
+.dy.big.mc .tl { display: block; columns: var(--nc); column-gap: 16px; }
+.dy.big.mc .tl li { margin-bottom: 8px; break-inside: avoid; }
+.dy.big.mc .tl li.gh { break-after: avoid; }
 .dy.big .tl li .n { white-space: normal; }
 .tl li.hold { opacity: .5; }
 /* Fecha junto al círculo (J 16) */
@@ -400,7 +406,7 @@ const defaultSel = () => dow < 5 ? 'd' + dow : 'F';
 function renderDays() {
   const box = document.getElementById('days'); box.innerHTML = '';
   REG = [];
-  const rest = [], seq = [];
+  const seq = [];
   let far = false;   // del lunes siguiente en adelante, letra más chica
   const item = (key, shape, letter, label, list, isToday, dn) => {
     const big = key === selDay;
@@ -427,7 +433,7 @@ function renderDays() {
       d.appendChild(ul);
     }
     seq.push(d);
-    if (big) box.prepend(d); else rest.push(d);
+    if (big) box.prepend(d);
   };
   const day = i => item('d' + i, 'circ', LET[i], cap(DIAS[i]),
     tareas('d' + i), i === dow, addD(monday, i + (far ? 7 : 0)).getDate());
@@ -441,20 +447,41 @@ function renderDays() {
   far = true;
   for (let i = 0; i < start; i++) day(i);
   rombo('P', 'Próxima semana', false, rango(7, 13));
-  // Columnas: izquierda (abierto + 2 columnas debajo) y derecha
+  // Lo que va antes del seleccionado es "pasado": se va al final, con letra más chica
   const sel = seq.findIndex(d => d.classList.contains('big'));
-  seq.forEach((d, k) => d.style.setProperty('--fs', ([0, 12.5, 11.5, 10.5][Math.abs(k - sel)] ?? 9.5) + 'px'));
+  seq.forEach((d, k) => d.style.setProperty('--fs', (k > sel ? ([0, 12.5, 11.5, 10.5][k - sel] ?? 9.5) : k === sel - 1 ? 9 : 8) + 'px'));
   const bigEl = box.firstChild;
-  const izq = document.createElement('div'); izq.className = 'izq';
-  const row = document.createElement('div'); row.className = 'row';
+  const orden = [...seq.slice(sel + 1), ...seq.slice(0, sel)];
+  // La lista abierta debe caber en pantalla: si no cabe, ocupa todo el ancho y se parte en más columnas
+  const ul = bigEl.querySelector('.tl');
+  const navH = document.querySelector('nav.pags').offsetHeight;
+  const NIV = [[1, 17], [2, 17], [2, 15], [3, 13]];   // [columnas de texto, tamaño de letra]
+  for (let n = 0; n < NIV.length; n++) {
+    acomodar(box, bigEl, orden, n > 0);
+    bigEl.style.setProperty('--nc', NIV[n][0]); bigEl.style.setProperty('--bfs', NIV[n][1] + 'px');
+    bigEl.classList.toggle('mc', NIV[n][0] > 1);
+    if (!ul || ul.getBoundingClientRect().bottom + scrollY <= innerHeight - navH - 8) break;
+  }
+}
+// Acomoda los días. Normal: el abierto ocupa 2 de 3 columnas y a su lado van los que quepan.
+// Ancho: el abierto ocupa las 3 y los demás van debajo. El resto, de izquierda a derecha (1, 2, 3, 1, 2, 3…)
+function acomodar(box, bigEl, rest, ancho) {
+  box.innerHTML = '';
+  box.classList.toggle('ancho', ancho);
   const cols = [0, 1, 2].map(() => { const c = document.createElement('div'); c.className = 'col'; return c; });
-  izq.append(bigEl, row); row.append(cols[0], cols[1]); box.append(izq, cols[2]);
-  const top = box.getBoundingClientRect().top;
-  const fondo = c => c.lastChild ? c.lastChild.getBoundingClientRect().bottom - top : c.getBoundingClientRect().top - top;
-  // A un lado del abierto, los que quepan; luego el resto en orden de izquierda a derecha (1, 2, 3, 1, 2, 3…), apilados sin huecos
-  const bigBottom = bigEl.getBoundingClientRect().bottom - top;
   let i = 0;
-  while (i < rest.length && fondo(cols[2]) < bigBottom) cols[2].appendChild(rest[i++]);
+  if (ancho) {
+    const row = document.createElement('div'); row.className = 'row';
+    row.append(...cols); box.append(bigEl, row);
+  } else {
+    const izq = document.createElement('div'); izq.className = 'izq';
+    const row = document.createElement('div'); row.className = 'row';
+    izq.append(bigEl, row); row.append(cols[0], cols[1]); box.append(izq, cols[2]);
+    const top = box.getBoundingClientRect().top;
+    const fondo = c => c.lastChild ? c.lastChild.getBoundingClientRect().bottom - top : c.getBoundingClientRect().top - top;
+    const bigBottom = bigEl.getBoundingClientRect().bottom - top;
+    while (i < rest.length && fondo(cols[2]) < bigBottom) cols[2].appendChild(rest[i++]);
+  }
   rest.slice(i).forEach((d, k) => cols[k % 3].appendChild(d));
 }
 document.fonts?.ready.then(() => renderDays());
