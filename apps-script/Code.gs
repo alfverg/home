@@ -144,7 +144,8 @@ function getSnapshot_() {
 
 function getTasks_() {
   const filter = {
-    and: DONE_STATES.map(s => ({ property: 'Estado', status: { does_not_equal: s } })),
+    // Las Done sí se muestran (al final); solo se ocultan las de "Done Limpiar"
+    property: 'Estado', status: { does_not_equal: DONE_STATES[1] },
   };
   const out = [];
   let cursor;

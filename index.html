@@ -259,6 +259,7 @@ const cap = s => s[0].toUpperCase() + s.slice(1);
 
 // Íconos de caja (PC) de PokeAPI, gen VII, embebidos
 const SPR = {
+  494: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAWCAYAAADNX8xBAAABlklEQVR4nKWUIXfCMBRGb3YmmKMSGVxl6oZbcdg6KieRQyInQe4nFNe54YasLDJumUOCnMtEaGlptp1tn2mT9N1+Ly8vQimFRxYQvoWvdOWDFHFQwf4F+pMuQZWbX+v6HyZaqf8WVAc3nY+2hxboq7S8wU0IIH5yZLNBgAzbk0a7Z7p3EPgmNd/fU9NnlhyR95IkLWtIE2TLsuRjPvZCU9MHYPkYAEEHAq789kbeM1ztOvZ7y8kFBC+kdnT3MHOjZwcIXyaEPDBc7XjLzx9HUeaFVI54HK2I38f0lq+ELxOAjsPteuNNu+lIRFFmyzIFVvXC9LZq5i1Ga+bLc4V8Eqfut1JKZsmReDppfWC09u1LdbbqOaGUskUcUETwlPcBmCVHwI2NMc0AC+Dct/esdgSQZxFmZ5BKOjen95Mj8ixChmEHAufuF4CoAioIwHxxIBsEFHHAfHHAaI3RurNHrV7LBgE9JWuIVJJ8GpIkBZjvz5K4uGpbV0Mzle16U1WuA/GBLmWzgXPRbFCffup+ke4PnVL79AmFiJyh9YFzXwAAAABJRU5ErkJggg==',
   192: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAVCAYAAACkCdXRAAACMUlEQVR4nI2UIXDiQBiFv3QqFlccdbcy54IjrpXEBde4qywukUgkca1sXc6BC7J1W5e6Rubc4UDG5cSyS0Jpe/9MZnaX/N++9zaL43ke31TTGjtfvXh2otE8AE2W7FB5TZbsjsHfwlB5jcprC5JXAgB5JZBStjf8UOdtVXsI1UvNxIVVLiDXP4ZBzVCUZPu5HwgDdE7BSBPdJMMFHgXX4RCAbbHm6UERBjUgrAM/ECdtNlmyI15oNVGUWRBAfzjGC0KtdF/R1P2Q4/nBniBNIH6c4/tz22TG82RM/DgnvZ0BMBTlycwcPxA2r22xRqmZBSk143lVdJTGC51rtLjoZGZsOsb/erq1TUrNyPzMzrfF2o7llThpE2M1TSBSUQcwvnR543AI8YIOkNa8c5rxAtLbGbGas50Udt37seHtzwA4nPgqFyxL0bHptK6TzS1N4Nedb2FPD8pu1gYeZ2ZgTd/vcfFX757dl6TJQXEY1PYmmNpn3Lmr50ATPV8DUL5XbNODZVPR1IOl3kTPXaACHX5HWQMwvJe2uZhWqLymeqmZLT36sV43G+0uN4znI+3i+tkq7GTWUuwAjZTSggysH4P7U7JavuoIJiMLPDsCmKeBQ6Op3eXGxhFORoSTEavlq3HVdD4No9BYrn5v4EYvluUGsV+TNwPK98oqMypPwZxiWlnLtafViDeQNwNrt6o0rKCid9fjOLPPqvNH2Lvr4boDimllojHvOP8D+wre+c7+AYuH/PDswuKUAAAAAElFTkSuQmCC',
   252: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAB8UlEQVR4nJWVobebMBTGf/Q8QR11REYyR12Rz9at8snKNzf+hErm3mRlJXXIda51RSKR4IprXCYIDLoCb/ecnITk5rvJ/b4bLN/3mTBtemvKsbGXKcDXaAHAKbzpzvxogDFQHcZzQLE/OtRj2B8dbodCjwHPJk5KcnHYfq3a7+74f0H1IfKeLlxz+9Ogmr+EDIJFmztbXEyeB/1ndMjo2q6sAFivqhrw9RdSSqSXTp70BaAobRZvoiHAkFL1HFXxhdxcvSjHUzADULGNK8ALBVLKdrHJ31IqjmrBOVFsf0uyqIA++730WUb87YQXClRss4nKdkdycYiSOtg6O/8DGMZz4tAlz3MAy3pSUb0AAFEiSRUcNnlzSgCklG3w/dHB9xWn8MYz0F6AnQw4bHKaNNkbhXAVS6laJ1MQ7e2nypQg8PAT+LHNyLFRsc0pLzj1vO7QSclYRemdDACYLz2+7z3ke9Xm7UlryRot0yCoq+p+zUjNbY069GPzPpYs3gSAHr3++ZwB4D/IUkpJFdRR3JWgvBSUlwJ3JbgdikGidKPXD1uQKji9Z6RpredGAeZkuKu6z75dYUBSYEq3KGtiTB5biXXE/1j/Fgy/p9aTR1kDCFdBKMii4Td1jKgus0D9uOQ/HdaramQbk+J/tE/9Uv4A10TPznvi+gMAAAAASUVORK5CYII=',
   202: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAVCAYAAABLy77vAAABc0lEQVR4nI2ULZDCMBBGX5gTWByVkcicrMQikUgkyMrKykqQSCQSi6y8SmRk62pxPQEb+pMwfDOdJunm5dtNGmWMwaPWM6Z8gaIfH2B7+esN3m1FkawE7gWqjqN2CBjCAIpk5YVNupDT+jcIWugIgDi/Ouc+ELdkHYR8I2WMCaYkDrXWLPOLSw/GKbpii6NlfnHBAvhGE3gWUibcknUPKm1x05S1F+Qc3W1FtDuw0NEI1k3pUWRgDiOQMsa0cX6lOu6JduOArpqy5lFkWGthcAQm/ilvVcd9r++DCEgVyYpod6A67oM1GAJ5niV5/I6asqYp61G69/NW3LRpmqG1RmsN0DrQcMVHkTGNU/dN2qLz+QTAZrN1qQEoa+0oeGbmvb6s/npjrSXLUgDV+/u7Lroup3HqvmncrkmawPsctXF+7RV66E4U2jXnSCCvgjotNidmZk7D01VIvftoaLfrFsJ3Uc9RKKDr9pNU4M4e6uM1C/APdFCvcJJMsE4AAAAASUVORK5CYII=',
@@ -288,7 +289,7 @@ function openSheet(i) {
   sh.querySelector('.go').href = 'https://www.notion.so/' + r.id;
   sh.showModal();
 }
-const OBL = [['U', 6], ['S', 229], ['D', 54], ['N', 143], ['', 0]];
+const OBL = [['U', 6], ['S', 229], ['D', 54], ['N', 143], ['', 0], ['K', 494]];   // K = Done, al final (Victini)
 const VIVO = { h: 96 };   // solo Hold lleva Pokémon
 // Colores por categoría: AVR rosa, BBVA azul, Casa pasto, Maestría naranja
 const CATCOL = { A: '#FF74B0', B: '#3CACFF', C: '#85D84D', M: '#FC8D25' };
@@ -317,7 +318,7 @@ const limpio = s => (s || '').replace(/\s*\p{Extended_Pictographic}\uFE0F?$/u, '
 // Tareas de un lugar; dentro de cada grupo, primero la prioridad más alta y luego el deadline más cercano
 const tareas = key => (snap?.tasks || []).filter(t => lugar(t.ti) === key)
   .sort((a, b) => (b.pr ?? -1) - (a.pr ?? -1) || (a.d || '9').localeCompare(b.d || '9'))
-  .map(t => ({ n: t.n, o: oblCod(t.o), v: vivoCod(t.v), sz: corto(t.sz), cat: catCod(t.c), raw: t }));
+  .map(t => ({ n: t.n, o: (t.e || '').startsWith('✅') ? 'K' : oblCod(t.o), v: vivoCod(t.v), sz: corto(t.sz), cat: catCod(t.c), raw: t }));
 const pk = (id, cls) => id ? `<img class="pk ${cls}" src="${SPR[id]}" alt="">` : '';
 let selDay;
 
