@@ -1,6 +1,6 @@
 // Cachea solo la "cáscara" de la app. Los datos viajan aparte y se guardan en localStorage.
-const V = 'home-v6';
-const SHELL = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
+const V = 'home-v7';
+const SHELL = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'acomodar.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

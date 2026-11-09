@@ -91,6 +91,25 @@ function doPost(e) {
       notion_('patch', '/pages/' + body.id, {
         properties: { Tiempo: body.tiempo ? { select: { name: body.tiempo } } : { select: null } },
       });
+    } else if (body.action === 'acomodar') {
+      // Varios cambios de golpe (página Acomodar): Tiempo, Obligatorio, Vivo y Estado de cada tarjeta
+      const errores = [];
+      (body.cambios || []).forEach(c => {
+        try {
+          const props = {};
+          if ('tiempo' in c) props.Tiempo = c.tiempo ? { select: { name: c.tiempo } } : { select: null };
+          if ('obligatorio' in c) props.Obligatorio = { select: { name: c.obligatorio } };
+          if ('vivo' in c) props.Vivo = { select: { name: c.vivo } };
+          if ('estado' in c) {
+            props.Estado = { status: { name: c.estado } };
+            if (c.estado === DONE_STATES[0]) props.Progreso = { select: { name: PROGRESO_100 } };
+          }
+          notion_('patch', '/pages/' + c.id, { properties: props });
+        } catch (err) {
+          errores.push({ id: c.id, error: String(err).slice(0, 200) });
+        }
+      });
+      return json_({ ok: true, errores, snap: refreshCache() });
     } else if (body.action === 'habSet') {
       // Un ✓ (o su quitada) de un hábito en un día: se agrega un renglón, el último manda
       habSheet_().getSheetByName('Registro').appendRow([body.f, body.llave, body.v ? 1 : 0, new Date()]);
@@ -114,6 +133,7 @@ function refreshCache() {
   const data = {
     t: new Date().toISOString(),
     tasks: safe_(getTasks_, []),
+    ti: safe_(getTiempoOpts_, []),   // nombres actuales de las opciones de Tiempo (meses y trimestres cambian)
     events: safe_(getEvents_, []),
     mail: safe_(getMail_, []),
     hab: safe_(getHab_, null),
@@ -130,7 +150,7 @@ function refreshHab_() {
 }
 
 function guardar_(data) {
-  data.h = hash_(JSON.stringify([data.tasks, data.events, data.mail, data.hab]));
+  data.h = hash_(JSON.stringify([data.tasks, data.ti, data.events, data.mail, data.hab]));
   CacheService.getScriptCache().put(CACHE_KEY, JSON.stringify(data), 21600); // 6 h, máx. permitido
   return data;
 }
@@ -157,6 +177,12 @@ function getTasks_() {
     cursor = res.has_more ? res.next_cursor : undefined;
   } while (cursor);
   return out;
+}
+
+/** Opciones de la propiedad Tiempo, en el orden de Notion */
+function getTiempoOpts_() {
+  const db = notion_('get', '/databases/' + NOTION_DB);
+  return db.properties.Tiempo.select.options.map(o => o.name);
 }
 
 function compactTask_(pg) {

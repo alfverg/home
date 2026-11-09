@@ -176,6 +176,78 @@ body { padding-bottom: 190px; }
 #toast { position: fixed; left: 50%; bottom: calc(130px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px);
   text-align: center; background: var(--tx); color: var(--bg); padding: 10px 16px; border-radius: 99px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 5; }
 #toast.show { opacity: 1; }
+/* ---------- Acomodar (se abre con la pelotita de Klink al final de Tareas) ---------- */
+.klink { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--past); background: none; display: grid; place-items: center; cursor: pointer; padding: 0; margin-top: 8px; }
+.klink img { width: 33px; height: auto; image-rendering: pixelated; }
+#pg-acomodar, #ac-dial, #ac-bar { --before: #3CACFF; --before-soft: #0D4B76; --after: #FF74B0; --after-soft: #742C4C; }
+#pg-acomodar .disp, #ac-dial .disp { font-family: var(--display); font-weight: 800; font-variation-settings: "SOFT" 100, "WONK" 1; }
+#pg-acomodar .ac-top { display: flex; align-items: center; gap: 6px; }
+#pg-acomodar .ac-top h1 { margin: 0; font-size: 30px; line-height: 1.05; }
+#ac-back { width: 40px; height: 40px; margin-left: -10px; border: 0; background: none; color: var(--tx); font: 400 30px/1 var(--body); cursor: pointer; border-radius: 50%; }
+#pg-acomodar .modes { display: flex; justify-content: space-between; gap: 6px; margin: 14px 0 6px; }
+#pg-acomodar .modes button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 0; padding: 0; color: var(--mut); font: 600 11px var(--body); cursor: pointer; }
+#pg-acomodar .modes .ball { width: 52px; height: 52px; border-radius: 50%; border: 1.5px solid var(--mc); display: grid; place-items: center; opacity: .55; }
+#pg-acomodar .modes .ball img { height: 30px; width: auto; }
+#pg-acomodar .modes .ball.many { grid-template-columns: repeat(2, auto); gap: 0 1px; align-content: center; justify-content: center; }
+#pg-acomodar .modes .ball.many img { height: 17px; }
+#pg-acomodar .modes button[aria-pressed="true"] { color: var(--tx); }
+#pg-acomodar .modes button[aria-pressed="true"] .ball { opacity: 1; background: var(--mf); box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--mc); }
+#pg-acomodar .modes button:focus-visible .ball { outline: 2px solid var(--tx); outline-offset: 3px; }
+#pg-acomodar section { margin-top: 20px; }
+#pg-acomodar h2 { font-size: 17px; line-height: 1.2; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); display: flex; justify-content: center; align-items: center; gap: 8px; }
+#pg-acomodar h2 small { font: 600 11px var(--body); color: var(--mut); }
+#pg-acomodar h2 .pk { height: 28px; width: auto; }
+#pg-acomodar h3 { font-size: 13px; line-height: 1.2; margin: 12px 0 4px; color: var(--mut); display: flex; justify-content: center; align-items: center; gap: 6px; }
+#pg-acomodar .circ { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--c); display: grid; place-items: center; font-size: 13px; color: var(--c); flex: none; background: none; cursor: default; }
+#pg-acomodar .rombo { width: 26px; height: 26px; display: grid; place-items: center; flex: none; cursor: default; }
+#pg-acomodar .rombo span { width: 19px; height: 19px; border: 1.5px solid var(--c); border-radius: 3px; transform: rotate(45deg); display: grid; place-items: center; }
+#pg-acomodar .rombo b { transform: rotate(-45deg); font-size: 11px; color: var(--c); }
+#pg-acomodar h3 .circ, #pg-acomodar h3 .rombo { width: 20px; height: 20px; font-size: 10px; }
+#pg-acomodar h3 .rombo span { width: 14px; height: 14px; }
+#pg-acomodar h3 .rombo b { font-size: 8px; }
+#pg-acomodar .none { text-align: center; color: var(--mut); margin: 6px 0 0; font-size: 12px; }
+#pg-acomodar .track { display: flex; justify-content: center; padding-block: 3px; overflow-x: clip; }
+#pg-acomodar .bubble { max-width: 82%; display: flex; align-items: center; gap: 7px; transition: transform .14s ease-out; padding: 8px 15px; border-radius: 999px; border: 1.5px solid var(--kb, var(--line)); background: var(--kf, var(--card)); color: var(--tx); font: 400 14px/1.25 var(--body); cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#pg-acomodar .bubble::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--k, var(--mut)); flex: none; }
+#pg-acomodar .bubble .vv { height: 14px; width: auto; flex: none; }
+#pg-acomodar .bubble.done .n { text-decoration: line-through; text-decoration-color: rgb(244 241 249 / .5); opacity: .7; }
+#pg-acomodar .bubble.swiping { transition: none; }
+#pg-acomodar .bubble.chg { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--tx); }
+#pg-acomodar .bubble.is-picked { font-weight: 700; }
+#pg-acomodar .bubble.is-picked::before { content: "✓"; width: auto; height: auto; background: none; color: var(--tx); font-weight: 700; }
+#pg-acomodar .bubble:focus-visible { outline: 2px solid var(--tx); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { #pg-acomodar .bubble { transition: none; } }
+#pg-acomodar .dest { text-align: center; font-size: 11px; font-weight: 600; color: var(--mut); }
+#pg-acomodar .dest:empty { display: none; }
+#pg-acomodar .dest .is-before { color: var(--before); }
+#pg-acomodar .dest .is-after { color: var(--after); }
+#ac-bar { position: fixed; left: 0; right: 0; bottom: calc(57px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--bg); border-top: 1px solid var(--line); padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); font-size: 13px; color: var(--mut); }
+#ac-bar[hidden] { display: none; }
+#ac-bar button { font: 700 14px var(--body); padding: 10px 16px; border-radius: 12px; border: 0; background: var(--past); color: var(--tx); cursor: pointer; }
+#ac-bar button:disabled { opacity: .35; cursor: default; }
+#ac-dial { position: fixed; inset: 0; z-index: 20; background: rgb(10 6 16 / .62); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#ac-dial[hidden] { display: none; }
+#ac-head { position: absolute; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); text-align: center; padding: 8px 16px; border-radius: 14px; background: var(--card); pointer-events: none; }
+#ac-task { font-size: 19px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ac-route { font-weight: 600; font-size: 12px; min-height: 1.35em; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--mut); }
+#ac-route.is-before { color: var(--before); }
+#ac-route.is-after { color: var(--after); }
+#ac-face { position: absolute; inset: 0; width: 100%; height: 100%; }
+#ac-face .band { fill: var(--card); stroke: var(--bg); stroke-width: 2; cursor: pointer; }
+#ac-face .band.quit { fill: var(--bg); stroke: var(--line); stroke-width: 1; }
+#ac-face .band.quit.on { fill: var(--tx); stroke: var(--tx); }
+#ac-face .wedge { fill: var(--line); stroke: var(--bg); stroke-width: 2; cursor: pointer; }
+#ac-face .wedge.sel { fill: var(--past); stroke: var(--tx); stroke-width: 1.5; }
+#ac-face .wedge.sel.is-before { fill: var(--before-soft); stroke: var(--before); }
+#ac-face .wedge.sel.is-after { fill: var(--after-soft); stroke: var(--after); }
+#ac-face text { text-anchor: middle; dominant-baseline: central; pointer-events: none; font-family: var(--body); }
+#ac-face .bt { fill: var(--mut); font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+#ac-face .bt.quit.on { fill: var(--bg); }
+#ac-face .wt { fill: var(--mut); font-size: 12px; font-weight: 600; }
+#ac-face .wt.is-before { fill: var(--before); }
+#ac-face .wt.is-after { fill: var(--after); }
+#ac-face .wt.from { fill: var(--tx); font-weight: 700; }
+#ac-face .wt.sel { fill: var(--tx); font-family: var(--display); font-weight: 800; font-variation-settings: "SOFT" 100, "WONK" 1; font-size: 17px; }
 </style>
 </head>
 <body>
@@ -196,12 +268,18 @@ body { padding-bottom: 190px; }
   <div id="pg-tareas">
   <section id="days" aria-label="Días de la semana"></section>
 
+  <button class="klink" id="ac-open" aria-label="Acomodar tareas"><img alt=""></button>
   <p class="estado"><span id="status">Cargando…</span><button id="refresh">↻ Actualizar</button><button id="cfgOpen">⚙︎ Conexión</button></p>
 
   </div>
   <div id="pg-habitos" hidden>
     <div class="hbar" role="group" aria-label="Momento del día"></div>
     <div id="hlist"></div>
+  </div>
+  <div id="pg-acomodar" hidden>
+    <div class="ac-top"><button id="ac-back" aria-label="Volver a Tareas">‹</button><h1 class="disp">Acomodar</h1></div>
+    <div class="modes" role="group" aria-label="Qué acomodar"></div>
+    <div id="ac-board"></div>
   </div>
 
 </main>
@@ -212,6 +290,15 @@ body { padding-bottom: 190px; }
 </nav>
 
 <div id="toast"></div>
+
+<div id="ac-bar" hidden>
+  <span id="ac-count">0 cambios</span>
+  <button id="ac-save" type="button" disabled>Guardar en Notion</button>
+</div>
+<div id="ac-dial" hidden role="dialog" aria-modal="true" aria-labelledby="ac-task">
+  <svg id="ac-face"></svg>
+  <div id="ac-head"><div id="ac-task" class="disp"></div><div id="ac-route" aria-live="polite"></div></div>
+</div>
 
 <dialog id="hedit">
   <button class="x" aria-label="Cerrar" onclick="this.closest('dialog').close()">✕</button>
@@ -706,6 +793,7 @@ function render() {
   drawWeek(); drawMonth(); drawYear(); renderDays();
   if (!document.getElementById('pg-habitos').hidden) renderHab();
   renderStatus();
+  window.AC?.refresh();
 }
 
 // ---------- Conexión con el Apps Script ----------
@@ -778,5 +866,6 @@ if (LS.get('pg', 'tareas') === 'habitos') document.querySelector('nav.pags butto
 render();
 load(true);
 </script>
+<script src="acomodar.js"></script>
 </body>
 </html>
