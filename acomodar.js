@@ -89,20 +89,19 @@ function tHead(g){
 function head(g,tag="h2"){
   const h=document.createElement(tag);h.className="disp";
   let ico="",txt="";
-  if(tag==="h3"||mode==="t")[ico,txt]=tHead(g);
+  if(tag==="h2")[ico,txt]=tHead(g);
   else if(mode==="o"){const pk={0:6,1:229,2:54,3:143}[g-P0];if(pk)ico=`<img class="pk" src="${SPR[pk]}" alt="">`;txt=g==null?"Sin Obligatorio":optName(g).replace(/^\S+ /,"")}
   else if(mode==="v"){if(g===P0+5)ico=`<img class="pk" src="${SPR[96]}" alt="">`;txt=g==null?"Sin Vivo":optName(g)}
   else{if(g===6)ico=`<img class="pk" src="${SPR[494]}" alt="">`;txt=ESTADOS[g]}
   h.innerHTML=ico;const ts=document.createElement("span");ts.textContent=txt;h.append(ts);
   return h;
 }
+/* Sub-grupo dentro de cada Tiempo según el modo (en modo Tiempo no hay) */
 function groupOf(it){
-  if(mode==="t")return it.from.t;
   if(mode==="e")return it.e0;
   return it.from[mode];
 }
 function groupsOrder(){
-  if(mode==="t")return[...Array(SIN+1).keys()];
   if(mode==="e")return[...ESTADOS.keys()];
   return[...MODES[mode].rings[0][1],null];
 }
@@ -112,18 +111,19 @@ const board=$("ac-board");
 function build(){
   modesEl.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===mode?"true":"false"));
   board.replaceChildren();
-  groupsOrder().forEach(g=>{
-    const list=items.filter(it=>groupOf(it)===g);
-    if(!list.length&&!(mode==="t"&&g<5))return;
+  /* Siempre se agrupa primero por Tiempo; en Obligatorio, Vivo y Done, dentro de cada Tiempo van sus sub-grupos */
+  const sub=mode!=="t";
+  const order=sub?groupsOrder():[];
+  [...Array(SIN+1).keys()].forEach(g=>{
+    const list=items.filter(it=>it.from.t===g);
+    if(!list.length&&!(g<5))return;
     const sec=document.createElement("section");
-    const h=head(g);const n=document.createElement("small");n.textContent=list.length||"";h.append(n);sec.append(h);
+    const h=head(g,"h2");const n=document.createElement("small");n.textContent=list.length||"";h.append(n);sec.append(h);
     if(!list.length){const p=document.createElement("p");p.className="none";p.textContent="Sin tarjetas";sec.append(p)}
-    /* Obligatorio y Vivo: dentro de cada grupo, sub-grupos por Tiempo */
-    const sub=mode==="o"||mode==="v";
-    if(sub)list.sort((a,b)=>a.from.t-b.from.t);
-    let lastT;
-    list.forEach(it=>{
-      if(sub&&it.from.t!==lastT){lastT=it.from.t;sec.append(head(lastT,"h3"))}
+    if(sub)list.sort((a,b)=>order.indexOf(groupOf(a))-order.indexOf(groupOf(b)));
+    let last;
+    list.forEach((it,i)=>{
+      if(sub&&(i===0||groupOf(it)!==last)){last=groupOf(it);sec.append(head(last,"h3"))}
       const track=document.createElement("div");track.className="track";
       const b=document.createElement("div");b.className="bubble";b.tabIndex=0;b.setAttribute("role","button");
       const c=CATCOL[it.cat];
